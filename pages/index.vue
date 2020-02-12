@@ -11,10 +11,16 @@
 </template>
 
 <script lang="ts">
+import crypto from 'crypto'
 import Vue from 'vue'
 import axios from 'axios'
-import JsSha from 'jssha'
 const Cookie = process.client ? require('js-cookie') : undefined
+
+const generateHash = (text: string) => {
+  const sha256 = crypto.createHash('sha256')
+  sha256.update(text)
+  return sha256.digest('hex')
+}
 
 export default Vue.extend({
   components: {},
@@ -23,13 +29,6 @@ export default Vue.extend({
     return {
       isLoading: false,
       isLoaded: false
-    }
-  },
-  computed: {
-    i() {
-      const sha256 = new JsSha('SHA-256', 'TEXT')
-      sha256.update(this.$store.state.token + process.env.APP_SECRET)
-      return sha256.getHash('HEX')
     }
   },
   methods: {
@@ -49,13 +48,16 @@ export default Vue.extend({
         { appSecret, token }
       )
       console.log(user)
+      const i = generateHash(
+        `${this.$store.state.token}${process.env.APP_SECRET}`
+      )
       const result = await axios.post(
         'https://misskey.m544.net/api/drive/files',
         {
-          i: this.i,
+          i,
           limit: 20
         },
-        { withCredentials: true }
+        { withCredentials: false }
       )
       console.log(result)
       this.isLoading = false

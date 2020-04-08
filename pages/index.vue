@@ -2,9 +2,9 @@
   <v-container fill-height>
     <v-row justify="center" align-content="center">
       <v-col cols="8" class="text-center">
-        <v-btn color="primary" x-large :loading="isLoading" @click="loadDrive"
-          >Load Drive</v-btn
-        >
+        <p v-for="file in files" :key="file">
+          <img :src="file.thumbnailUrl" />
+        </p>
       </v-col>
     </v-row>
   </v-container>
@@ -28,38 +28,40 @@ export default Vue.extend({
   data() {
     return {
       isLoading: false,
-      isLoaded: false
+      isLoaded: false,
+
+      files: null
     }
+  },
+  async created() {
+    const appSecret = process.env.APP_SECRET
+
+    const token = this.$store.state.token
+    const {
+      data: { accessToken }
+    } = await axios.post('https://misskey.m544.net/api/auth/session/userkey', {
+      appSecret,
+      token
+    })
+    const i = generateHash(`${accessToken}${process.env.APP_SECRET}`)
+
+    const result = await axios.post(
+      'https://misskey.m544.net/api/drive/files',
+      JSON.stringify({
+        i,
+        limit: 20
+      })
+    )
+    this.files = result.data
   },
   methods: {
     logout() {
       Cookie.remove('token')
       this.$store.commit('setToken', null)
     },
-    async loadDrive() {
+    loadDrive() {
       this.isLoading = true
-      const appSecret = process.env.APP_SECRET
 
-      const token = this.$store.state.token
-      const {
-        data: { user }
-      } = await axios.post(
-        'https://misskey.m544.net/api/auth/session/userkey',
-        { appSecret, token }
-      )
-      console.log(user)
-      const i = generateHash(
-        `${this.$store.state.token}${process.env.APP_SECRET}`
-      )
-      const result = await axios.post(
-        'https://misskey.m544.net/api/drive/files',
-        {
-          i,
-          limit: 20
-        },
-        { withCredentials: false }
-      )
-      console.log(result)
       this.isLoading = false
       this.isLoaded = true
     }

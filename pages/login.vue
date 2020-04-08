@@ -14,9 +14,14 @@
         </v-row>
 
         <v-row justify="center" align-content="center">
-          <v-col cols="3" class="text-center">
+          <v-col v-if="!isLogin" cols="3" class="text-center">
             <v-btn color="primary" x-large @click="postLogin">
               login
+            </v-btn>
+          </v-col>
+          <v-col v-else cols="3" class="text-center">
+            <v-btn color="primary" x-large to="/" nuxt>
+              Go
             </v-btn>
           </v-col>
         </v-row>
@@ -34,7 +39,8 @@ require('dotenv').config()
 export default Vue.extend({
   data() {
     return {
-      disabled: true
+      disabled: true,
+      isLogin: false
     }
   },
 
@@ -56,7 +62,8 @@ export default Vue.extend({
 
       this.$store.commit('setToken', token) // mutating to store for client rendering
       Cookie.set('token', token) // saving token in cookie for server rendering
-      this.$router.push('/')
+
+      this.isLogin = true
     }
   }
 })

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2018",
-    "module": "esnext",
+    "target": "ES2018",
+    "module": "ESNext",
     "moduleResolution": "node",
     "lib": [
       "esnext",
@@ -29,8 +29,7 @@
     "types": [
       "@types/node",
       "@nuxt/types",
-      "vuetify",
-      "nuxt-i18n"
+      "vuetify"
     ]
   },
   "exclude": [

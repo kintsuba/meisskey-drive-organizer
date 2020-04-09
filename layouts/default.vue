@@ -18,7 +18,7 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
-    <v-app-bar dark app :color="color">
+    <v-app-bar dark app :color="color" style="z-index:6">
       <v-app-bar-nav-icon dark @click.stop="drawer = !drawer" />
       <v-toolbar-title id="head-logo" v-text="title" />
       <v-spacer />
@@ -29,7 +29,7 @@
     <v-content>
       <nuxt />
     </v-content>
-    <v-footer app :color="color" dark>
+    <v-footer app :color="color" dark style="z-index:6">
       <small>&copy; 2020 Kintsuba</small>
     </v-footer>
   </v-app>

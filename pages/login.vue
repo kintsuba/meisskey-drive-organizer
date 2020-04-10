@@ -38,7 +38,7 @@ import crypto from 'crypto'
 import Vue from 'vue'
 import axios from 'axios'
 // const Cookie = process.client ? require('js-cookie') : undefined
-require('dotenv').config()
+if (process.env.NODE_ENV !== 'production') require('dotenv').config()
 
 const generateHash = (text: string) => {
   const sha256 = crypto.createHash('sha256')

@@ -158,6 +158,10 @@ export default {
       }
     }
   },
+  env: {
+    APP_SECRET: process.env.APP_SECRET || ''
+  },
+
   /*
    ** Build configuration
    */

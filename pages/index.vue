@@ -54,15 +54,20 @@
     <div class="fab-container">
       <v-row>
         <v-col class="d-flex flex-column align-center">
-          <v-slide-y-reverse-transition v-for="fab in subFabs" :key="fab.icon">
+          <v-slide-y-reverse-transition>
             <v-btn
               v-show="isSubFabDisplay"
               color="accent"
               fab
-              :x-large="fab.xLarge"
               class="mb-2"
+              @click="removeSelectingFiles"
             >
-              <v-icon>{{ fab.icon }}</v-icon>
+              <v-icon>fas fa-trash</v-icon>
+            </v-btn>
+          </v-slide-y-reverse-transition>
+          <v-slide-y-reverse-transition>
+            <v-btn v-show="isSubFabDisplay" color="accent" fab class="mb-2">
+              <v-icon>fas fa-file-export</v-icon>
             </v-btn>
           </v-slide-y-reverse-transition>
           <v-slide-y-reverse-transition>
@@ -92,19 +97,17 @@ import { DriveFile } from '../types/misskey'
 type fab = {
   xLarge: boolean
   icon: string
-  click: string
+  click: Function
 }
 
 type DataType = {
   isLoading: boolean
   isSubFabDisplay: boolean
-
-  subFabs: fab[]
-
   files: DriveFile[]
   fileInfo: Map<string, boolean>
   firstFilePerPageIds: string[]
   page: number
+  i: string
 }
 
 export default Vue.extend({
@@ -114,23 +117,11 @@ export default Vue.extend({
     return {
       isLoading: true,
       isSubFabDisplay: false,
-
-      subFabs: [
-        {
-          xLarge: false,
-          icon: 'fas fa-file-export',
-          click: ''
-        },
-        {
-          xLarge: false,
-          icon: 'fas fa-trash',
-          click: ''
-        }
-      ],
       files: [],
       firstFilePerPageIds: [],
       page: 1,
-      fileInfo: new Map()
+      fileInfo: new Map(),
+      i: ''
     }
   },
   computed: {
@@ -139,11 +130,11 @@ export default Vue.extend({
     }
   },
   async created() {
-    const i = this.$store.state.i
+    this.i = this.$store.state.i
     const result = await axios.post(
       'https://misskey.m544.net/api/drive/files',
       {
-        i,
+        i: this.i,
         limit: 48
       }
     )
@@ -154,6 +145,34 @@ export default Vue.extend({
   methods: {
     clickCard(file: DriveFile) {
       this.$set(file, 'isSelecting', !file.isSelecting)
+    },
+    async removeSelectingFiles() {
+      this.isLoading = true
+
+      const selectingFiles = this.files.filter((f) => f.isSelecting)
+      for (const file of selectingFiles) {
+        const deleteResult = await axios.post(
+          'https://misskey.m544.net/api/drive/files/delete',
+          {
+            i: this.i,
+            fileId: file.id
+          }
+        )
+        if (deleteResult.statusText !== 'OK') console.log(deleteResult.status)
+      }
+
+      const getResult = await axios.post(
+        'https://misskey.m544.net/api/drive/files',
+        {
+          i: this.i,
+          limit: 48
+        }
+      )
+      this.files = getResult.data as DriveFile[]
+      this.firstFilePerPageIds.length = 0
+      this.firstFilePerPageIds[this.page] = this.files[0].id
+      this.isSubFabDisplay = false
+      this.isLoading = false
     },
     getThumbnail(id: string) {
       const file = this.files.find((f) => f.id === id)

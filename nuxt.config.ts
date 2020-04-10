@@ -16,7 +16,7 @@ export default {
       {
         hid: 'description',
         name: 'description',
-        content: 'めいすきーのドライブを整理しましょう'
+        content: 'めいすきー用ドライブ管理アプリです。'
       },
       {
         hid: 'og:url',
@@ -27,17 +27,17 @@ export default {
       {
         hid: 'og:title',
         property: 'og:title',
-        content: 'ログボ for Misskey'
+        content: 'Meisskey Drive Organizer'
       },
       {
         hid: 'og:description',
         property: 'og:description',
-        content: '毎日 Misskey を促進します。'
+        content: 'めいすきー用ドライブ管理アプリです。'
       },
       {
         hid: 'og:site_name',
         property: 'og:site_name',
-        content: 'ログボ for Misskey'
+        content: 'Meisskey Drive Organizer'
       },
       {
         hid: 'og:image',

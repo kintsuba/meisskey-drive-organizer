@@ -51,6 +51,29 @@
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
 
+    <v-dialog v-model="dialog" persistent max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Move Files</span>
+        </v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="selectingFolder"
+            :items="folders"
+            label="Folder"
+            item-text="name"
+            required
+            return-object
+          ></v-select>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red" text @click="dialog = false">Close</v-btn>
+          <v-btn color="red" text @click="moveSelectingFiles">Move</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <div class="fab-container">
       <v-row>
         <v-col class="d-flex flex-column align-center">
@@ -66,7 +89,13 @@
             </v-btn>
           </v-slide-y-reverse-transition>
           <v-slide-y-reverse-transition>
-            <v-btn v-show="isSubFabDisplay" color="accent" fab class="mb-2">
+            <v-btn
+              v-show="isSubFabDisplay"
+              color="accent"
+              fab
+              class="mb-2"
+              @click.stop="openDialog"
+            >
               <v-icon>fas fa-file-export</v-icon>
             </v-btn>
           </v-slide-y-reverse-transition>
@@ -76,7 +105,7 @@
               color="accent"
               fab
               x-large
-              @click="isSubFabDisplay = !isSubFabDisplay"
+              @click="isClickedFab = !isClickedFab"
             >
               <v-icon>{{
                 isSubFabDisplay ? 'fas fa-chevron-down' : 'fas fa-chevron-up'
@@ -92,21 +121,18 @@
 <script lang="ts">
 import Vue from 'vue'
 import axios from 'axios'
-import { DriveFile } from '../types/misskey'
-
-type fab = {
-  xLarge: boolean
-  icon: string
-  click: Function
-}
+import { DriveFile, DriveFolder } from '../types/misskey'
 
 type DataType = {
   isLoading: boolean
-  isSubFabDisplay: boolean
+  isClickedFab: boolean
   files: DriveFile[]
   fileInfo: Map<string, boolean>
+  folders: DriveFolder[]
+  selectingFolder: DriveFolder
   firstFilePerPageIds: string[]
   page: number
+  dialog: boolean
   i: string
 }
 
@@ -116,17 +142,29 @@ export default Vue.extend({
   data(): DataType {
     return {
       isLoading: true,
-      isSubFabDisplay: false,
+      isClickedFab: false,
       files: [],
+      fileInfo: new Map(),
+      folders: [],
+      selectingFolder: {
+        id: '',
+        createdAt: '',
+        name: '',
+        foldersCount: 0,
+        filesCount: 0
+      },
       firstFilePerPageIds: [],
       page: 1,
-      fileInfo: new Map(),
+      dialog: false,
       i: ''
     }
   },
   computed: {
     isFabDisplay(): boolean {
       return this.files.some((f) => f.isSelecting)
+    },
+    isSubFabDisplay(): boolean {
+      return this.isClickedFab && this.isFabDisplay
     },
     length(): number {
       return this.page + 1
@@ -161,7 +199,7 @@ export default Vue.extend({
       this.firstFilePerPageIds.length = 0
       this.page = 1
       this.firstFilePerPageIds[this.page] = this.files[0].id
-      this.isSubFabDisplay = false
+      this.isClickedFab = false
     },
     async removeSelectingFiles() {
       this.isLoading = true
@@ -181,7 +219,7 @@ export default Vue.extend({
       this.updateFiles()
       this.isLoading = false
     },
-    async moveSelectingFiles(folderId: string) {
+    async moveSelectingFiles() {
       this.isLoading = true
 
       const selectingFiles = this.files.filter((f) => f.isSelecting)
@@ -191,12 +229,12 @@ export default Vue.extend({
           {
             i: this.i,
             fileId: file.id,
-            folderId
+            folderId: this.selectingFolder.id
           }
         )
         if (result.statusText !== 'OK') console.error(result.status)
       }
-
+      this.dialog = false
       this.updateFiles()
       this.isLoading = false
     },
@@ -206,7 +244,23 @@ export default Vue.extend({
         ? file?.thumbnailUrl
         : 'https://www.silhouette-illust.com/wp-content/uploads/2016/05/1327-300x300.jpg'
     },
-    async nextPage() {
+    async openDialog() {
+      this.i = this.$store.state.i
+      const result = await axios.post(
+        'https://misskey.m544.net/api/drive/folders',
+        {
+          i: this.i,
+          limit: 100
+        }
+      )
+      this.folders = result.data as DriveFolder[]
+
+      this.dialog = true
+    },
+
+    async nextPage(fromSelect = false) {
+      if (fromSelect) return // 二重防止
+
       this.isLoading = true
       const i = this.$store.state.i
       const result = await axios.post(
@@ -218,7 +272,7 @@ export default Vue.extend({
         }
       )
       this.files = result.data as DriveFile[]
-      this.isSubFabDisplay = false
+      this.isClickedFab = false
       this.firstFilePerPageIds[this.page] = this.files[0].id
       this.page++
       this.isLoading = false
@@ -237,7 +291,7 @@ export default Vue.extend({
         }
       )
       this.files = result.data.reverse() as DriveFile[]
-      this.isSubFabDisplay = false
+      this.isClickedFab = false
       this.page--
       this.isLoading = false
     },
@@ -254,10 +308,11 @@ export default Vue.extend({
           }
         )
         this.files = result.data.reverse() as DriveFile[]
+        this.isClickedFab = false
         this.page = page
         this.isLoading = false
-      } else {
-        this.nextPage()
+      } else if (page === this.page + 1) {
+        this.nextPage(true)
       }
     }
   }

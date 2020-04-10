@@ -15,3 +15,13 @@ export interface DriveFile {
   webpublicUrl: string
   isSelecting?: boolean
 }
+
+export interface DriveFolder {
+  id: string
+  createdAt: string
+  name: string
+  foldersCount: number
+  filesCount: number
+  parentId?: string
+  parent?: DriveFolder
+}

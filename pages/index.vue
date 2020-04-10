@@ -41,7 +41,7 @@
     </v-row>
     <v-pagination
       :value="page"
-      length="10"
+      :length="length"
       class="mt-6"
       @input="selectPage"
       @next="nextPage"
@@ -127,6 +127,9 @@ export default Vue.extend({
   computed: {
     isFabDisplay(): boolean {
       return this.files.some((f) => f.isSelecting)
+    },
+    length(): number {
+      return this.page + 1
     }
   },
   async created() {
@@ -146,21 +149,7 @@ export default Vue.extend({
     clickCard(file: DriveFile) {
       this.$set(file, 'isSelecting', !file.isSelecting)
     },
-    async removeSelectingFiles() {
-      this.isLoading = true
-
-      const selectingFiles = this.files.filter((f) => f.isSelecting)
-      for (const file of selectingFiles) {
-        const deleteResult = await axios.post(
-          'https://misskey.m544.net/api/drive/files/delete',
-          {
-            i: this.i,
-            fileId: file.id
-          }
-        )
-        if (deleteResult.statusText !== 'OK') console.log(deleteResult.status)
-      }
-
+    async updateFiles() {
       const getResult = await axios.post(
         'https://misskey.m544.net/api/drive/files',
         {
@@ -170,8 +159,45 @@ export default Vue.extend({
       )
       this.files = getResult.data as DriveFile[]
       this.firstFilePerPageIds.length = 0
+      this.page = 1
       this.firstFilePerPageIds[this.page] = this.files[0].id
       this.isSubFabDisplay = false
+    },
+    async removeSelectingFiles() {
+      this.isLoading = true
+
+      const selectingFiles = this.files.filter((f) => f.isSelecting)
+      for (const file of selectingFiles) {
+        const result = await axios.post(
+          'https://misskey.m544.net/api/drive/files/delete',
+          {
+            i: this.i,
+            fileId: file.id
+          }
+        )
+        if (result.statusText !== 'OK') console.error(result.status)
+      }
+
+      this.updateFiles()
+      this.isLoading = false
+    },
+    async moveSelectingFiles(folderId: string) {
+      this.isLoading = true
+
+      const selectingFiles = this.files.filter((f) => f.isSelecting)
+      for (const file of selectingFiles) {
+        const result = await axios.post(
+          'https://misskey.m544.net/api/drive/files/update',
+          {
+            i: this.i,
+            fileId: file.id,
+            folderId
+          }
+        )
+        if (result.statusText !== 'OK') console.error(result.status)
+      }
+
+      this.updateFiles()
       this.isLoading = false
     },
     getThumbnail(id: string) {
@@ -192,6 +218,7 @@ export default Vue.extend({
         }
       )
       this.files = result.data as DriveFile[]
+      this.isSubFabDisplay = false
       this.firstFilePerPageIds[this.page] = this.files[0].id
       this.page++
       this.isLoading = false
@@ -210,6 +237,7 @@ export default Vue.extend({
         }
       )
       this.files = result.data.reverse() as DriveFile[]
+      this.isSubFabDisplay = false
       this.page--
       this.isLoading = false
     },
@@ -228,6 +256,8 @@ export default Vue.extend({
         this.files = result.data.reverse() as DriveFile[]
         this.page = page
         this.isLoading = false
+      } else {
+        this.nextPage()
       }
     }
   }

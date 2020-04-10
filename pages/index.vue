@@ -51,7 +51,23 @@
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
 
-    <v-dialog v-model="dialog" persistent max-width="600px">
+    <v-dialog v-model="removeDialog" persistent max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Remove Files</span>
+        </v-card-title>
+        <v-card-text>
+          Remove these files, Okay?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red" text @click="removeDialog = false">Close</v-btn>
+          <v-btn color="red" text @click="removeSelectingFiles">Remove</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="moveDialog" persistent max-width="600px">
       <v-card>
         <v-card-title>
           <span class="headline">Move Files</span>
@@ -68,7 +84,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="red" text @click="dialog = false">Close</v-btn>
+          <v-btn color="red" text @click="moveDialog = false">Close</v-btn>
           <v-btn color="red" text @click="moveSelectingFiles">Move</v-btn>
         </v-card-actions>
       </v-card>
@@ -83,7 +99,7 @@
               color="accent"
               fab
               class="mb-2"
-              @click="removeSelectingFiles"
+              @click="removeDialog = true"
             >
               <v-icon>fas fa-trash</v-icon>
             </v-btn>
@@ -94,7 +110,7 @@
               color="accent"
               fab
               class="mb-2"
-              @click.stop="openDialog"
+              @click.stop="openMoveDialog"
             >
               <v-icon>fas fa-file-export</v-icon>
             </v-btn>
@@ -132,7 +148,8 @@ type DataType = {
   selectingFolder: DriveFolder
   firstFilePerPageIds: string[]
   page: number
-  dialog: boolean
+  removeDialog: boolean
+  moveDialog: boolean
   i: string
 }
 
@@ -155,7 +172,8 @@ export default Vue.extend({
       },
       firstFilePerPageIds: [],
       page: 1,
-      dialog: false,
+      removeDialog: false,
+      moveDialog: false,
       i: ''
     }
   },
@@ -216,6 +234,7 @@ export default Vue.extend({
         if (result.statusText !== 'OK') console.error(result.status)
       }
 
+      this.removeDialog = false
       this.updateFiles()
       this.isLoading = false
     },
@@ -234,7 +253,7 @@ export default Vue.extend({
         )
         if (result.statusText !== 'OK') console.error(result.status)
       }
-      this.dialog = false
+      this.moveDialog = false
       this.updateFiles()
       this.isLoading = false
     },
@@ -244,7 +263,7 @@ export default Vue.extend({
         ? file?.thumbnailUrl
         : 'https://www.silhouette-illust.com/wp-content/uploads/2016/05/1327-300x300.jpg'
     },
-    async openDialog() {
+    async openMoveDialog() {
       this.i = this.$store.state.i
       const result = await axios.post(
         'https://misskey.m544.net/api/drive/folders',
@@ -255,7 +274,7 @@ export default Vue.extend({
       )
       this.folders = result.data as DriveFolder[]
 
-      this.dialog = true
+      this.moveDialog = true
     },
 
     async nextPage(fromSelect = false) {

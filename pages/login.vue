@@ -39,6 +39,8 @@ import Vue from 'vue'
 import axios from 'axios'
 // const Cookie = process.client ? require('js-cookie') : undefined
 if (process.env.NODE_ENV !== 'production') require('dotenv').config()
+console.log(process.env.NODE_ENV)
+console.log(process.env.APP_SECRET)
 
 const generateHash = (text: string) => {
   const sha256 = crypto.createHash('sha256')

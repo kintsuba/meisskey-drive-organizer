@@ -13,7 +13,7 @@
       >
         <v-hover>
           <template v-slot:default="{ hover }">
-            <v-card tile ripple hover @click="clickCard(file.id)">
+            <v-card tile ripple hover @click="clickCard(file)">
               <v-img
                 :src="getThumbnail(file.id)"
                 :lazy-src="getThumbnail(file.id)"
@@ -23,13 +23,13 @@
 
               <v-fade-transition>
                 <v-overlay
-                  v-if="isSelecting(file.id) || hover"
+                  v-if="file.isSelecting || hover"
                   absolute
                   color="#036358"
                 >
                   <v-icon
                     x-large
-                    :color="isSelecting(file.id) ? 'primary' : 'white'"
+                    :color="file.isSelecting ? 'primary' : 'white'"
                     >fas fa-check-circle</v-icon
                   >
                 </v-overlay>
@@ -50,20 +50,37 @@
     <v-overlay :value="isLoading">
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
-    <v-fab-transition>
-      <v-btn
-        v-show="isFabDisplay"
-        color="accent"
-        fixed
-        bottom
-        right
-        fab
-        x-large
-        class="mb-12 mr-12"
-      >
-        <v-icon>mdi-plus</v-icon>
-      </v-btn>
-    </v-fab-transition>
+
+    <div class="fab-container">
+      <v-row>
+        <v-col class="d-flex flex-column align-center">
+          <v-slide-y-reverse-transition v-for="fab in subFabs" :key="fab.icon">
+            <v-btn
+              v-show="isSubFabDisplay"
+              color="accent"
+              fab
+              :x-large="fab.xLarge"
+              class="mb-2"
+            >
+              <v-icon>{{ fab.icon }}</v-icon>
+            </v-btn>
+          </v-slide-y-reverse-transition>
+          <v-slide-y-reverse-transition>
+            <v-btn
+              v-show="isFabDisplay"
+              color="accent"
+              fab
+              x-large
+              @click="isSubFabDisplay = !isSubFabDisplay"
+            >
+              <v-icon>{{
+                isSubFabDisplay ? 'fas fa-chevron-down' : 'fas fa-chevron-up'
+              }}</v-icon>
+            </v-btn>
+          </v-slide-y-reverse-transition>
+        </v-col>
+      </v-row>
+    </div>
   </v-container>
 </template>
 
@@ -71,12 +88,19 @@
 import Vue from 'vue'
 import axios from 'axios'
 import { DriveFile } from '../types/misskey'
-const Cookie = process.client ? require('js-cookie') : undefined
+
+type fab = {
+  xLarge: boolean
+  icon: string
+  click: string
+}
 
 type DataType = {
   isLoading: boolean
-  isLoaded: boolean
-  isFabDisplay: boolean
+  isSubFabDisplay: boolean
+
+  subFabs: fab[]
+
   files: DriveFile[]
   fileInfo: Map<string, boolean>
   firstFilePerPageIds: string[]
@@ -89,13 +113,29 @@ export default Vue.extend({
   data(): DataType {
     return {
       isLoading: true,
-      isLoaded: false,
-      isFabDisplay: false,
+      isSubFabDisplay: false,
 
+      subFabs: [
+        {
+          xLarge: false,
+          icon: 'fas fa-file-export',
+          click: ''
+        },
+        {
+          xLarge: false,
+          icon: 'fas fa-trash',
+          click: ''
+        }
+      ],
       files: [],
       firstFilePerPageIds: [],
       page: 1,
       fileInfo: new Map()
+    }
+  },
+  computed: {
+    isFabDisplay(): boolean {
+      return this.files.some((f) => f.isSelecting)
     }
   },
   async created() {
@@ -112,37 +152,14 @@ export default Vue.extend({
     this.isLoading = false
   },
   methods: {
-    logout() {
-      Cookie.remove('token')
-      this.$store.commit('setToken', null)
+    clickCard(file: DriveFile) {
+      this.$set(file, 'isSelecting', !file.isSelecting)
     },
     getThumbnail(id: string) {
       const file = this.files.find((f) => f.id === id)
       return file?.thumbnailUrl
         ? file?.thumbnailUrl
         : 'https://www.silhouette-illust.com/wp-content/uploads/2016/05/1327-300x300.jpg'
-    },
-    isSelecting(id: string): boolean {
-      return this.fileInfo.has(id) ? this.fileInfo.get(id) ?? false : false
-    },
-    clickCard(id: string) {
-      this.isSelecting(id)
-        ? this.fileInfo.set(id, false)
-        : this.fileInfo.set(id, true)
-
-      if (this.fileInfo.size > 0) {
-        let select = false
-        for (const isSelecting of this.fileInfo.values()) {
-          if (isSelecting) select = true
-        }
-        if (select) {
-          this.isFabDisplay = true
-        } else {
-          this.isFabDisplay = false
-        }
-      } else {
-        this.isFabDisplay = false
-      }
     },
     async nextPage() {
       this.isLoading = true
@@ -198,4 +215,10 @@ export default Vue.extend({
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.fab-container {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+}
+</style>

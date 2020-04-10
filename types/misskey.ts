@@ -13,4 +13,5 @@ export interface DriveFile {
   url?: string
   userId: string
   webpublicUrl: string
+  isSelecting?: boolean
 }
